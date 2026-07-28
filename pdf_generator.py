@@ -6,7 +6,6 @@ from PIL import Image
 def pulisci_testo(testo):
     if not testo:
         return ""
-    # Sostituisce l'euro e pulisce eventuali caratteri non supportati da FPDF
     testo_str = str(testo).replace("€", "EUR")
     return testo_str.encode('latin-1', 'replace').decode('latin-1')
 
@@ -73,7 +72,6 @@ def genera_preventivo_pdf(dati_vettore, dati_preventivo, logo_bytes=None):
     iva = dati_preventivo.get('iva', 0.0)
     totale = dati_preventivo.get('totale', 0.0)
 
-    # Righe di testo senza simbolo Euro (risolto crash Unicode)
     pdf.text(12, y_tab + 16, f"Servizio trasporto ({km} Km x {tariffa:.2f} EUR/Km)")
     pdf.text(165, y_tab + 16, f"{costo:.2f} EUR")
     
@@ -92,8 +90,8 @@ def genera_preventivo_pdf(dati_vettore, dati_preventivo, logo_bytes=None):
     pdf.text(122, y_tot + 22, "TOTALE")
     pdf.text(165, y_tot + 22, f"{totale:.2f} EUR")
 
-    # Output compatibile
-    out = pdf.output(dest='S')
-    if isinstance(out, str):
-        return out.encode('latin-1', 'replace')
-    return bytes(out)
+    # Output sicuro in bytes per Streamlit
+    out = pdf.output()
+    if isinstance(out, (bytes, bytearray)):
+        return bytes(out)
+    return str(out).encode('latin-1', 'replace')
