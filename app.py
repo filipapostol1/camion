@@ -165,9 +165,9 @@ with tab_preventivi:
         totale = round(imponibile + iva, 2)
 
         c_m1, c_m2, c_m3 = st.columns(3)
-        c_m1.metric("Trasporto", f"€ {costo_trasporto:.2f}")
-        c_m2.metric("Pedaggi", f"€ {pedaggio_stimato:.2f}")
-        c_m3.metric("TOTALE + IVA", f"€ {totale:.2f}")
+        c_m1.metric("Trasporto", f"EUR {costo_trasporto:.2f}")
+        c_m2.metric("Pedaggi", f"EUR {pedaggio_stimato:.2f}")
+        c_m3.metric("TOTALE + IVA", f"EUR {totale:.2f}")
 
         dati_vettore = {
             'nome': st.session_state.vettore_nome,
@@ -191,24 +191,28 @@ with tab_preventivi:
 
         pdf_prev_bytes = pdf_generator.genera_preventivo_pdf(dati_vettore, dati_prev, st.session_state.logo_bytes)
         
-        if st.button("💾 Salva in Cronologia", use_container_width=True):
+        # Funzione di salvataggio automatico al download
+        def auto_salva_preventivo():
             salva_in_cronologia({
-                "Data": datetime.now().strftime("%d/%m/%Y %H:%M"), "Tipo": "Preventivo",
-                "Cliente": cliente_nome, "Tratta": f"{partenza} -> {destinazione}", "Totale": f"EUR {totale:.2f}"
+                "Data": datetime.now().strftime("%d/%m/%Y %H:%M"), 
+                "Tipo": "Preventivo",
+                "Cliente": cliente_nome, 
+                "Tratta": f"{partenza} -> {destinazione}", 
+                "Totale": f"EUR {totale:.2f}"
             })
-            st.success("Preventivo salvato in cronologia!")
 
         st.download_button(
             label="📥 SCARICA PREVENTIVO (PDF)",
             data=pdf_prev_bytes,
             file_name=f"Preventivo_{pulisci_testo(cliente_nome)}.pdf",
             mime="application/pdf",
+            on_click=auto_salva_preventivo,
             use_container_width=True
         )
 
 # --- TAB 3: BOLLA / DDT ---
 with tab_bolla:
-    st.subheader("Lettera di Vettura (Layout Strutturato Avanzato)")
+    st.subheader("Lettera di Vettura (Layout Perfettamente Allineato)")
     
     with st.expander("📝 DATI PRINCIPALI (Intestazione)", expanded=True):
         c1, c2, c3, c4 = st.columns(4)
@@ -276,90 +280,93 @@ with tab_bolla:
 
     # Generazione PDF Bolla
     pdf = FPDF(orientation='P', unit='mm', format='A4')
-    pdf.set_margins(10, 10, 10)
+    pdf.set_margins(10, 8, 10)
     pdf.add_page()
     pdf.set_auto_page_break(False)
 
-    # Intestazione Vettore completa (Senza taglio [:20])
+    # Intestazione Vettore
     if st.session_state.logo_bytes:
         try:
             img = Image.open(io.BytesIO(st.session_state.logo_bytes))
             img.save("temp_logo_bolla.png")
-            pdf.image("temp_logo_bolla.png", x=10, y=10, w=35)
+            pdf.image("temp_logo_bolla.png", x=10, y=8, w=35)
         except:
             pdf.set_font("Helvetica", "B", 13)
-            pdf.text(10, 15, pulisci_testo(st.session_state.vettore_nome))
+            pdf.text(10, 14, pulisci_testo(st.session_state.vettore_nome))
     else:
         pdf.set_font("Helvetica", "B", 13)
-        pdf.text(10, 15, pulisci_testo(st.session_state.vettore_nome))
+        pdf.text(10, 14, pulisci_testo(st.session_state.vettore_nome))
 
     pdf.set_font("Helvetica", "B", 10)
-    pdf.text(150, 18, "LETTERA DI VETTURA")
+    pdf.text(145, 14, "LETTERA DI VETTURA")
     pdf.set_font("Helvetica", "B", 11)
-    pdf.text(150, 23, pulisci_testo(doc_num))
+    pdf.text(145, 19, pulisci_testo(doc_num))
 
-    y_offset = 30
+    y_offset = 24
     pdf.set_line_width(0.2)
 
-    # 1. Data / Ora
+    # 1. Data / Ora / Rif / Booking
     pdf.rect(10, y_offset, 190, 8)
     pdf.line(40, y_offset, 40, y_offset+8)
     pdf.line(70, y_offset, 70, y_offset+8)
     pdf.line(110, y_offset, 110, y_offset+8)
     
-    pdf.set_font("Helvetica", "", 7)
+    pdf.set_font("Helvetica", "", 6.5)
     pdf.text(12, y_offset+3, "Data")
     pdf.text(42, y_offset+3, "Ora")
     pdf.text(72, y_offset+3, "Nr. Riferimento")
     pdf.text(112, y_offset+3, "Compagnia / Booking")
     
-    pdf.set_font("Helvetica", "B", 10)
+    pdf.set_font("Helvetica", "B", 9.5)
     pdf.text(12, y_offset+7, pulisci_testo(data_bolla))
     pdf.text(42, y_offset+7, pulisci_testo(ora_bolla))
     pdf.text(72, y_offset+7, pulisci_testo(booking_ref))
-    pdf.text(130, y_offset+7, pulisci_testo(compagnia))
+    pdf.text(112, y_offset+7, pulisci_testo(compagnia))
 
     # 2. Committente / Vettore
     y2 = y_offset + 8
-    h2 = 30
+    h2 = 28
     pdf.rect(10, y2, 190, h2)
     pdf.line(105, y2, 105, y2+h2)
 
+    # Committente
     pdf.set_font("Helvetica", "", 7)
     pdf.text(12, y2+4, "Committ.")
-    pdf.text(12, y2+8, "Indirizzo")
-    pdf.text(12, y2+12, "Località")
-    pdf.text(12, y2+16, "Telefono")
-    pdf.text(12, y2+20, "E-mail")
-    pdf.text(12, y2+24, "I.Albo n°")
-    pdf.text(65, y2+16, "P.Iva")
+    pdf.text(12, y2+8.5, "Indirizzo")
+    pdf.text(12, y2+13, "Località")
+    pdf.text(12, y2+17.5, "Telefono")
+    pdf.text(12, y2+22, "E-mail")
+    pdf.text(12, y2+26.5, "I.Albo n°")
 
     pdf.set_font("Helvetica", "B", 8)
-    pdf.text(35, y2+4, pulisci_testo(committente))
-    pdf.text(35, y2+8, pulisci_testo(comm_ind))
-    pdf.text(35, y2+12, pulisci_testo(comm_loc))
-    pdf.text(95, y2+12, pulisci_testo(comm_prov))
-    pdf.text(35, y2+16, pulisci_testo(comm_tel))
-    pdf.text(35, y2+20, pulisci_testo(comm_email))
-    pdf.text(35, y2+24, pulisci_testo(comm_albo))
-    pdf.text(75, y2+16, pulisci_testo(comm_piva))
+    pdf.text(28, y2+4, pulisci_testo(committente))
+    pdf.text(28, y2+8.5, pulisci_testo(comm_ind))
+    
+    loc_comm_str = f"{pulisci_testo(comm_loc)} ({pulisci_testo(comm_prov)})" if comm_prov else pulisci_testo(comm_loc)
+    pdf.text(28, y2+13, loc_comm_str)
+    
+    pdf.text(28, y2+17.5, pulisci_testo(comm_tel))
+    pdf.text(65, y2+17.5, f"P.Iva  {pulisci_testo(comm_piva)}")
+    pdf.text(28, y2+22, pulisci_testo(comm_email))
+    pdf.text(28, y2+26.5, pulisci_testo(comm_albo))
 
+    # Vettore
     pdf.set_font("Helvetica", "", 7)
     pdf.text(107, y2+4, "Vettore")
-    pdf.text(107, y2+8, "Località")
-    pdf.text(107, y2+12, "Telefono")
-    pdf.text(107, y2+16, "E-mail")
-    pdf.text(107, y2+20, "Autista")
-    pdf.text(107, y2+24, "Rgs vett.")
-    pdf.text(107, y2+28, "I.Albo n°")
+    pdf.text(107, y2+8.5, "P.IVA")
+    pdf.text(107, y2+13, "Località")
+    pdf.text(107, y2+17.5, "I.Albo n°")
+    pdf.text(107, y2+22, "Autista")
 
-    pdf.set_font("Helvetica", "B", 7)
-    pdf.text(125, y2+4, f"{pulisci_testo(st.session_state.vettore_nome)[:35]} P.I. {pulisci_testo(st.session_state.vettore_piva)}")
-    pdf.text(125, y2+8, f"{pulisci_testo(st.session_state.vettore_indirizzo)}   {pulisci_testo(st.session_state.vettore_loc)}")
-    pdf.text(190, y2+8, pulisci_testo(st.session_state.vettore_prov))
-    pdf.text(173, y2+12, pulisci_testo(st.session_state.vettore_albo))
     pdf.set_font("Helvetica", "B", 8)
-    pdf.text(125, y2+20, pulisci_testo(st.session_state.autista))
+    pdf.text(122, y2+4, pulisci_testo(st.session_state.vettore_nome)[:42])
+    pdf.text(122, y2+8.5, pulisci_testo(st.session_state.vettore_piva))
+    
+    loc_vet_str = f"{pulisci_testo(st.session_state.vettore_indirizzo)} - {pulisci_testo(st.session_state.vettore_loc)} ({pulisci_testo(st.session_state.vettore_prov)})"
+    pdf.text(122, y2+13, loc_vet_str[:42])
+    
+    pdf.text(122, y2+17.5, pulisci_testo(st.session_state.vettore_albo))
+    pdf.text(122, y2+22, pulisci_testo(st.session_state.autista))
 
     # 3. Ritiro / Veicolo
     y3 = y2 + h2
@@ -369,19 +376,19 @@ with tab_bolla:
     
     pdf.set_font("Helvetica", "", 7)
     pdf.text(12, y3+4, "Term.Rit. / Caric.")
-    pdf.text(12, y3+8, "Indirizzo")
-    pdf.text(12, y3+11.5, "Località")
+    pdf.text(12, y3+7.5, "Indirizzo")
+    pdf.text(12, y3+11, "Località")
     pdf.set_font("Helvetica", "B", 8)
     pdf.text(35, y3+4, pulisci_testo(ritiro_term))
-    pdf.text(35, y3+8, pulisci_testo(ritiro_ind))
-    pdf.text(35, y3+11.5, pulisci_testo(ritiro_loc))
+    pdf.text(35, y3+7.5, pulisci_testo(ritiro_ind))
+    pdf.text(35, y3+11, pulisci_testo(ritiro_loc))
 
     pdf.set_font("Helvetica", "", 7)
     pdf.text(107, y3+4, "Veicolo")
-    pdf.text(107, y3+8, "1° Container")
+    pdf.text(107, y3+8.5, "1° Container")
     pdf.set_font("Helvetica", "B", 8)
-    pdf.text(130, y3+4, f"{pulisci_testo(st.session_state.trattore)}   /   {pulisci_testo(st.session_state.rimorchio)}")
-    pdf.text(130, y3+8, pulisci_testo(container1))
+    pdf.text(128, y3+4, f"{pulisci_testo(st.session_state.trattore)}   /   {pulisci_testo(st.session_state.rimorchio)}")
+    pdf.text(128, y3+8.5, pulisci_testo(container1))
 
     # 4. Scarico / Container
     y4 = y3 + h3
@@ -391,99 +398,112 @@ with tab_bolla:
     
     pdf.set_font("Helvetica", "", 7)
     pdf.text(12, y4+4, "Luogo scarico")
-    pdf.text(12, y4+8, "Indirizzo")
-    pdf.text(12, y4+11.5, "Località")
+    pdf.text(12, y4+7.5, "Indirizzo")
+    pdf.text(12, y4+11, "Località")
     pdf.set_font("Helvetica", "B", 8)
     pdf.text(35, y4+4, pulisci_testo(scarico_luogo))
-    pdf.text(35, y4+8, pulisci_testo(scarico_ind))
-    pdf.text(35, y4+11.5, pulisci_testo(scarico_loc))
+    pdf.text(35, y4+7.5, pulisci_testo(scarico_ind))
+    pdf.text(35, y4+11, pulisci_testo(scarico_loc))
 
     pdf.set_font("Helvetica", "", 7)
     pdf.text(107, y4+4, "2° Container")
-    pdf.text(107, y4+8, "Container tipo")
-    pdf.text(160, y4+8, "Peso Tot.Kg")
+    pdf.text(107, y4+8.5, "Container tipo")
+    pdf.text(158, y4+8.5, "Peso Tot.Kg")
     pdf.set_font("Helvetica", "B", 8)
-    pdf.text(130, y4+4, pulisci_testo(container2))
-    pdf.text(130, y4+8, pulisci_testo(tipo_cont))
-    pdf.set_font("Helvetica", "B", 10)
-    pdf.text(180, y4+8, pulisci_testo(peso))
+    pdf.text(128, y4+4, pulisci_testo(container2))
+    pdf.text(128, y4+8.5, pulisci_testo(tipo_cont))
+    pdf.set_font("Helvetica", "B", 9.5)
+    pdf.text(175, y4+8.5, pulisci_testo(peso))
 
     # 5. Merce / Destinazione
     y5 = y4 + h4
-    h5 = 15
+    h5 = 12
     pdf.rect(10, y5, 190, h5)
     pdf.line(105, y5, 105, y5+h5)
 
     pdf.set_font("Helvetica", "", 7)
     pdf.text(12, y5+4, "Merce")
-    pdf.text(80, y5+4, "Colli")
-    pdf.text(12, y5+14, "KM")
-    pdf.set_font("Helvetica", "B", 9)
-    pdf.text(35, y5+4, pulisci_testo(merce))
-    pdf.text(90, y5+4, pulisci_testo(colli))
-    pdf.text(35, y5+14, pulisci_testo(km_viaggio))
+    pdf.text(75, y5+4, "Colli")
+    pdf.text(12, y5+10, "KM")
+    pdf.set_font("Helvetica", "B", 8.5)
+    pdf.text(28, y5+4, pulisci_testo(merce))
+    pdf.text(83, y5+4, pulisci_testo(colli))
+    pdf.text(28, y5+10, pulisci_testo(km_viaggio))
 
     pdf.set_font("Helvetica", "", 7)
     pdf.text(107, y5+4, "Destinazione")
-    pdf.text(107, y5+8, "Porto sbarco")
-    pdf.text(107, y5+12, "Spedizioniere")
+    pdf.text(107, y5+7.5, "Porto sbarco")
+    pdf.text(107, y5+11, "Spedizioniere")
     pdf.set_font("Helvetica", "B", 8)
-    pdf.text(130, y5+12, pulisci_testo(spedizioniere))
+    pdf.text(128, y5+11, pulisci_testo(spedizioniere))
 
-    # 6. Caricatori
+    # 6. Caricatori (1°, 2°, 3°)
     y6 = y5 + h5
-    for i, caric in enumerate([
+    caricatori_list = [
         (caric1_nome, caric1_ind, caric1_loc, caric1_tel, caric1_piva),
         (caric2_nome, caric2_ind, caric2_loc, caric2_tel, caric2_piva),
         (caric3_nome, caric3_ind, caric3_loc, caric3_tel, caric3_piva)
-    ]):
-        hc = 18
+    ]
+    
+    for i, caric in enumerate(caricatori_list):
+        hc = 15
         yc = y6 + (i * hc)
+        
         pdf.rect(10, yc, 190, hc)
         pdf.line(105, yc, 105, yc+hc)
         
-        pdf.line(105, yc+6, 200, yc+6)
         pdf.line(136, yc, 136, yc+hc)
         pdf.line(168, yc, 168, yc+hc)
-        pdf.set_font("Helvetica", "", 7)
-        pdf.text(113, yc+4, "Ora arrivo")
-        pdf.text(142, yc+4, "Ora partenza")
-        pdf.text(178, yc+4, "Sigillo/i")
+        pdf.line(105, yc+4.5, 200, yc+4.5)
+        
+        pdf.set_font("Helvetica", "", 6.5)
+        pdf.text(111, yc+3.2, "Ora arrivo")
+        pdf.text(142, yc+3.2, "Ora partenza")
+        pdf.text(178, yc+3.2, "Sigillo/i")
 
-        pdf.text(12, yc+4, f"{i+1}° Caricatore")
-        pdf.text(12, yc+8, "Indirizzo")
-        pdf.text(12, yc+12, "Località")
-        pdf.text(12, yc+16, "Telefono")
-        pdf.text(65, yc+16, "P.Iva")
+        pdf.set_font("Helvetica", "", 6.5)
+        pdf.text(12, yc+3.5, f"{i+1}° Caricatore")
+        pdf.text(12, yc+7, "Indirizzo")
+        pdf.text(12, yc+10.5, "Località")
+        pdf.text(12, yc+14, "Telefono")
 
-        pdf.set_font("Helvetica", "B", 8)
-        pdf.text(30, yc+4, pulisci_testo(caric[0]))
-        pdf.text(30, yc+8, pulisci_testo(caric[1]))
-        pdf.text(30, yc+12, pulisci_testo(caric[2]))
-        pdf.text(30, yc+16, pulisci_testo(caric[3]))
-        pdf.text(75, yc+16, pulisci_testo(caric[4]))
+        pdf.set_font("Helvetica", "B", 7.5)
+        pdf.text(28, yc+3.5, pulisci_testo(caric[0]))
+        pdf.text(28, yc+7, pulisci_testo(caric[1]))
+        pdf.text(28, yc+10.5, pulisci_testo(caric[2]))
+        pdf.text(28, yc+14, pulisci_testo(caric[3]))
+        if caric[4]:
+            pdf.set_font("Helvetica", "", 6.5)
+            pdf.text(65, yc+14, "P.Iva")
+            pdf.set_font("Helvetica", "B", 7.5)
+            pdf.text(73, yc+14, pulisci_testo(caric[4]))
 
     # 7. Osservazioni
-    y7 = y6 + (18 * 3)
-    h7 = 25
+    y7 = y6 + (15 * 3)
+    h7 = 18
     pdf.rect(10, y7, 190, h7)
+    pdf.set_font("Helvetica", "", 6.5)
+    pdf.text(12, y7+3.5, "Osservazioni")
+    pdf.set_font("Helvetica", "", 7.5)
+    pdf.set_xy(12, y7+5)
+    pdf.multi_cell(185, 3.5, pulisci_testo(osservazioni))
+
+    # 8. Dichiarazione Ricevitore
+    y_dich = y7 + h7
+    h_dich = 12
+    pdf.rect(10, y_dich, 190, h_dich)
+    pdf.set_font("Helvetica", "B", 7.5)
+    pdf.text(12, y_dich+4, "DICHIARAZIONE RICEVITORE / DESTINATARIO")
     pdf.set_font("Helvetica", "", 7)
-    pdf.text(12, y7+4, "Osservazioni")
-    pdf.set_font("Helvetica", "", 8)
-    pdf.set_xy(12, y7+6)
-    pdf.multi_cell(185, 4, pulisci_testo(osservazioni))
+    pdf.text(102, y_dich+4.5, "Constatato integro il sigillo ___________________ apposto mittente")
+    pdf.text(102, y_dich+9, "Rimosso sigillo mittente e apposto sigillo ______________________")
 
-    pdf.line(10, y7+h7-8, 200, y7+h7-8)
-    pdf.set_font("Helvetica", "", 8)
-    pdf.text(12, y7+h7-3, "DICHIARAZIONE RICEVITORE/DESTINATARIO")
-    pdf.text(105, y7+h7-4, "Constatato integro il sigillo ___________________ apposto mittente")
-    pdf.text(105, y7+h7-1, "Rimosso sigillo mittente e apposto sigillo ______________________")
-
-    # 8. Condizioni particolari
-    y8 = y7 + h7 + 2
+    # 9. Condizioni Particolari di Trasporto
+    y8 = y_dich + h_dich + 2
     pdf.set_font("Helvetica", "B", 7)
     pdf.text(10, y8, "CONDIZIONI PARTICOLARI DI TRASPORTO")
-    pdf.set_font("Helvetica", "", 6)
+    pdf.set_font("Helvetica", "", 5.5)
+    
     testo_legale = (
         "Il trasporto va eseguito nel rispetto delle disposizioni legislative e regolamentari poste a tutela della sicurezza stradale, in "
         "particolare modo rispetto agli art. 61 (sagoma limite), 62 (massa limite), 142 (limite di velocità), 164 (sistemazione del carico), "
@@ -499,28 +519,32 @@ with tab_bolla:
         "7) L'autista non è tenuto a partecipare in nessuna maniera alle operazioni di carico e/o scarico, ivi compresa l'eventuale scopertura containers open top.\n"
         "8) Le merci trasportate a mezzo autocarro sono assicurate per un importo massimo di EUR 30.000,00 alle condizioni generali..."
     )
-    pdf.set_xy(10, y8+2)
-    pdf.multi_cell(190, 2.5, testo_legale)
+    pdf.set_xy(10, y8 + 1.5)
+    pdf.multi_cell(190, 2.3, testo_legale)
 
-    # Conversione output in byte
+    # Output Byte
     out_bolla = pdf.output()
     if isinstance(out_bolla, (bytes, bytearray)):
         pdf_bolla_bytes = bytes(out_bolla)
     else:
         pdf_bolla_bytes = str(out_bolla).encode('latin-1', 'replace')
 
-    if st.button("💾 Salva in Cronologia", key="btn_salva_bolla", use_container_width=True):
+    # Funzione di salvataggio automatico al download
+    def auto_salva_bolla():
         salva_in_cronologia({
-            "Data": datetime.now().strftime("%d/%m/%Y %H:%M"), "Tipo": "Emissione Lettera Vettura",
-            "Cliente": committente, "Tratta": f"Rif: {booking_ref}", "Totale": "-"
+            "Data": datetime.now().strftime("%d/%m/%Y %H:%M"), 
+            "Tipo": "Emissione Lettera Vettura",
+            "Cliente": committente, 
+            "Tratta": f"Rif: {booking_ref}", 
+            "Totale": "-"
         })
-        st.success("Lettera di Vettura salvata in cronologia!")
 
     st.download_button(
         label="📄 SCARICA LETTERA DI VETTURA (PDF)",
         data=pdf_bolla_bytes,
         file_name=f"Bolla_{pulisci_testo(doc_num)}.pdf",
         mime="application/pdf",
+        on_click=auto_salva_bolla,
         use_container_width=True
     )
 
