@@ -11,58 +11,74 @@ def pulisci_testo(testo):
 
 def genera_preventivo_pdf(dati_vettore, dati_preventivo, logo_bytes=None):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
+    pdf.set_margins(10, 10, 10)
     pdf.add_page()
+    pdf.set_auto_page_break(False)
     
-    # 1. Logo o Nome Vettore
+    # 1. Logo / Intestazione Vettore
     if logo_bytes:
         try:
             img = Image.open(io.BytesIO(logo_bytes))
             img.save("temp_logo.png")
-            pdf.image("temp_logo.png", x=10, y=10, w=40)
+            pdf.image("temp_logo.png", x=10, y=10, w=38)
         except Exception:
-            pdf.set_font("Helvetica", "B", 14)
-            pdf.text(10, 20, pulisci_testo(dati_vettore.get('nome', '')))
+            pdf.set_font("Helvetica", "B", 13)
+            pdf.text(10, 15, pulisci_testo(dati_vettore.get('nome', '')))
     else:
-        pdf.set_font("Helvetica", "B", 14)
-        pdf.text(10, 20, pulisci_testo(dati_vettore.get('nome', '')))
+        pdf.set_font("Helvetica", "B", 13)
+        pdf.text(10, 15, pulisci_testo(dati_vettore.get('nome', '')))
         
-    pdf.set_font("Helvetica", "", 9)
-    pdf.text(10, 30, f"P.IVA: {pulisci_testo(dati_vettore.get('piva', ''))}")
-    pdf.text(10, 35, f"{pulisci_testo(dati_vettore.get('indirizzo', ''))} - {pulisci_testo(dati_vettore.get('loc', ''))}")
+    pdf.set_font("Helvetica", "", 8.5)
+    pdf.text(10, 26, f"P.IVA: {pulisci_testo(dati_vettore.get('piva', ''))}")
+    pdf.text(10, 31, f"{pulisci_testo(dati_vettore.get('indirizzo', ''))} - {pulisci_testo(dati_vettore.get('loc', ''))}")
     
-    # Intestazione Documento
-    pdf.set_font("Helvetica", "B", 14)
-    pdf.text(120, 20, "PREVENTIVO DI TRASPORTO")
-    pdf.set_font("Helvetica", "", 10)
+    # Intestazione Documento (Destra)
+    pdf.set_font("Helvetica", "B", 13)
+    pdf.text(130, 15, "PREVENTIVO DI TRASPORTO")
+    pdf.set_font("Helvetica", "", 9)
     data_em = dati_preventivo.get('data', datetime.now().strftime('%d/%m/%Y'))
-    pdf.text(120, 27, f"Data emissione: {pulisci_testo(data_em)}")
+    pdf.text(130, 22, f"Data emissione: {pulisci_testo(data_em)}")
 
-    # Riquadri Committente e Tratta
-    pdf.set_line_width(0.3)
-    pdf.rect(10, 50, 90, 30)
-    pdf.rect(105, 50, 95, 30)
+    # 2. Riquadri Committente e Tratta
+    y_box = 42
+    h_box = 28
+    pdf.set_line_width(0.2)
     
-    pdf.set_font("Helvetica", "B", 8)
-    pdf.text(12, 55, "SPETT.LE COMMITTENTE:")
-    pdf.set_font("Helvetica", "", 10)
-    pdf.text(12, 63, pulisci_testo(dati_preventivo.get('cliente', '')))
-    
-    pdf.set_font("Helvetica", "B", 8)
-    pdf.text(107, 55, "DETTAGLI TRATTA E MEZZO:")
-    pdf.set_font("Helvetica", "", 9)
-    pdf.text(107, 62, f"Partenza: {pulisci_testo(dati_preventivo.get('partenza', ''))[:40]}")
-    pdf.text(107, 68, f"Destinazione: {pulisci_testo(dati_preventivo.get('destinazione', ''))[:40]}")
-
-    # Tabella Costi
-    y_tab = 90
-    pdf.set_fill_color(230, 230, 230)
-    pdf.rect(10, y_tab, 190, 8, "DF")
+    # Committente (Sinistra)
+    pdf.rect(10, y_box, 92, h_box)
+    pdf.set_font("Helvetica", "B", 7.5)
+    pdf.text(12, y_box + 5, "SPETT.LE COMMITTENTE:")
     pdf.set_font("Helvetica", "B", 9)
-    pdf.text(12, y_tab + 5, "DESCRIZIONE DEL SERVIZIO")
-    pdf.text(165, y_tab + 5, "IMPORTO (EUR)")
+    pdf.set_xy(12, y_box + 8)
+    pdf.multi_cell(88, 4.5, pulisci_testo(dati_preventivo.get('cliente', '')))
     
-    pdf.set_font("Helvetica", "", 9)
-    pdf.rect(10, y_tab + 8, 190, 30)
+    # Tratta e Mezzo (Destra)
+    pdf.rect(106, y_box, 94, h_box)
+    pdf.set_font("Helvetica", "B", 7.5)
+    pdf.text(108, y_box + 5, "DETTAGLI TRATTA E MEZZO:")
+    pdf.set_font("Helvetica", "", 8.5)
+    
+    partenza_txt = pulisci_testo(dati_preventivo.get('partenza', ''))
+    destinazione_txt = pulisci_testo(dati_preventivo.get('destinazione', ''))
+    
+    pdf.text(108, y_box + 12, f"Partenza: {partenza_txt[:42]}")
+    pdf.text(108, y_box + 18, f"Destinazione: {destinazione_txt[:42]}")
+
+    # 3. Tabella Descrizione Servizi
+    y_tab = 78
+    h_header = 7
+    h_body = 28
+    
+    # Intestazione Tabella
+    pdf.set_fill_color(235, 235, 235)
+    pdf.rect(10, y_tab, 190, h_header, "DF")
+    pdf.set_font("Helvetica", "B", 8.5)
+    pdf.text(12, y_tab + 4.8, "DESCRIZIONE DEL SERVIZIO")
+    pdf.text(160, y_tab + 4.8, "IMPORTO (EUR)")
+    
+    # Corpo Tabella
+    pdf.rect(10, y_tab + h_header, 190, h_body)
+    pdf.line(155, y_tab, 155, y_tab + h_header + h_body) # Linea divisoria verticale
     
     km = dati_preventivo.get('km', 0)
     tariffa = dati_preventivo.get('tariffa', 0.0)
@@ -72,25 +88,48 @@ def genera_preventivo_pdf(dati_vettore, dati_preventivo, logo_bytes=None):
     iva = dati_preventivo.get('iva', 0.0)
     totale = dati_preventivo.get('totale', 0.0)
 
-    pdf.text(12, y_tab + 16, f"Servizio trasporto ({km} Km x {tariffa:.2f} EUR/Km)")
-    pdf.text(165, y_tab + 16, f"{costo:.2f} EUR")
+    pdf.set_font("Helvetica", "", 8.5)
+    # Riga 1: Servizio trasporto
+    y_riga1 = y_tab + h_header + 8
+    pdf.text(12, y_riga1, f"Servizio trasporto ({km} Km x {tariffa:.2f} EUR/Km)")
+    pdf.set_font("Helvetica", "B", 8.5)
+    pdf.text(160, y_riga1, f"{costo:.2f} EUR")
     
-    pdf.text(12, y_tab + 26, "Rimborso spese pedaggio autostradale stimato")
-    pdf.text(165, y_tab + 26, f"{pedaggio:.2f} EUR")
+    # Riga 2: Pedaggio
+    y_riga2 = y_riga1 + 10
+    pdf.set_font("Helvetica", "", 8.5)
+    pdf.text(12, y_riga2, "Rimborso spese pedaggio autostradale stimato")
+    pdf.set_font("Helvetica", "B", 8.5)
+    pdf.text(160, y_riga2, f"{pedaggio:.2f} EUR")
 
-    # Totali
-    y_tot = y_tab + 45
-    pdf.rect(120, y_tot, 80, 24)
+    # 4. Box Totali (In Basso a Destra)
+    y_tot = y_tab + h_header + h_body + 10
+    w_tot = 75
+    x_tot = 125
+    
+    pdf.rect(x_tot, y_tot, w_tot, 22)
+    pdf.line(x_tot + 35, y_tot, x_tot + 35, y_tot + 22) # Divisorio etichetta / valore
+    
+    pdf.set_font("Helvetica", "", 8)
+    pdf.text(x_tot + 3, y_tot + 5.5, "IMPONIBILE")
+    pdf.set_font("Helvetica", "B", 8.5)
+    pdf.text(x_tot + 38, y_tot + 5.5, f"{imponibile:.2f} EUR")
+    
+    pdf.line(x_tot, y_tot + 7.5, x_tot + w_tot, y_tot + 7.5)
+    
+    pdf.set_font("Helvetica", "", 8)
+    pdf.text(x_tot + 3, y_tot + 12.5, "IVA (22%)")
+    pdf.set_font("Helvetica", "B", 8.5)
+    pdf.text(x_tot + 38, y_tot + 12.5, f"{iva:.2f} EUR")
+    
+    pdf.line(x_tot, y_tot + 14.5, x_tot + w_tot, y_tot + 14.5)
+    
+    pdf.set_font("Helvetica", "B", 8.5)
+    pdf.text(x_tot + 3, y_tot + 19.5, "TOTALE")
     pdf.set_font("Helvetica", "B", 9)
-    pdf.text(122, y_tot + 6, "IMPONIBILE")
-    pdf.text(165, y_tot + 6, f"{imponibile:.2f} EUR")
-    pdf.text(122, y_tot + 14, "IVA (22%)")
-    pdf.text(165, y_tot + 14, f"{iva:.2f} EUR")
-    pdf.set_font("Helvetica", "B", 10)
-    pdf.text(122, y_tot + 22, "TOTALE")
-    pdf.text(165, y_tot + 22, f"{totale:.2f} EUR")
+    pdf.text(x_tot + 38, y_tot + 19.5, f"{totale:.2f} EUR")
 
-    # Output sicuro in bytes per Streamlit
+    # Output Byte
     out = pdf.output()
     if isinstance(out, (bytes, bytearray)):
         return bytes(out)
